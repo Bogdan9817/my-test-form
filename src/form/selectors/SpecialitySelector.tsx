@@ -1,41 +1,37 @@
-import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { UseFormRegister } from "react-hook-form";
-import { FormValues } from "../Form";
-import { updateDoctorsDeps } from "../../store/slices/doctorsSlice";
-import { updateSpecialities } from "../../store/slices/specialitiesSlice";
+import { specialitiesSelector } from "../../store/selectors";
+import { updateValue } from "../../store/slices/personSlice";
+import { InputProps } from "../Form";
 
-const SpecialitySelector = React.forwardRef<
-  HTMLSelectElement,
-  { label: string } & ReturnType<UseFormRegister<FormValues>>
->(({ onChange, name, label }, ref) => {
-  const { filtered, deps } = useAppSelector((state) => state.specialities);
+const SpecialitySelector = ({ register, setValue, error }: InputProps) => {
+  const specialities = useAppSelector(specialitiesSelector);
   const dispatch = useAppDispatch();
-  const handleChange = (e: any) => {
-    const specialityId = filtered.find((s) => s.id === e.target.value)?.id;
-    dispatch(updateDoctorsDeps({ specialityId }));
-    onChange(e);
-  };
-
-  useEffect(() => {
-    dispatch(updateSpecialities());
-  }, [deps, dispatch]);
 
   return (
     <>
-      <label>{label}</label>
-      <select name={name} ref={ref} onChange={handleChange}>
-        {filtered.length !== 1 && <option value=''>none</option>}
-        {filtered.map((s) => {
-          return (
-            <option key={`s-${s.id}`} value={s.id}>
-              {s.name}
-            </option>
-          );
-        })}
-      </select>
+      <div className='form-group'>
+        <label>Speciality</label>
+        <select
+          {...register("speciality", {
+            onChange(e) {
+              dispatch(updateValue({ speciality: e.target.value }));
+              setValue("speciality", e.target.value);
+            },
+          })}
+        >
+          {specialities.length !== 1 && <option value=''>none</option>}
+          {specialities.map((s) => {
+            return (
+              <option key={`s-${s.id}`} value={s.id}>
+                {s.name}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {error && <p className='error'>{error.message}</p>}
     </>
   );
-});
-
+};
 export default SpecialitySelector;

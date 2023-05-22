@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import patterns from "./patterns";
+import {
+  FieldError,
+  UseFormRegister,
+  UseFormSetError,
+  UseFormSetValue,
+  useForm,
+} from "react-hook-form";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { fetchCities, resetCitiesDeps } from "../store/slices/citiesSlice";
-import {
-  fetchDoctors,
-  resetDoctorsDeps,
-  updateDoctorsDeps,
-} from "../store/slices/doctorsSlice";
-import {
-  fetchSpecialities,
-  resetSpecialitiesDeps,
-  updateSpecialitiesDeps,
-} from "../store/slices/specialitiesSlice";
+import { fetchSpecialities } from "../store/slices/specialitiesSlice";
+import { fetchDoctors } from "../store/slices/doctorsSlice";
+import { fetchCities } from "../store/slices/citiesSlice";
+
 import SpecialitySelector from "./selectors/SpecialitySelector";
 import CitySelector from "./selectors/CitySelector";
 import DoctorSelector from "./selectors/DoctorSelector";
-import { formatDate, getAge } from "./helpers";
+import SexSelector from "./selectors/SexSelector";
+
+import NameInput from "./inputs/NameInput";
+import BirthdayInput from "./inputs/BirthdayInput";
+import ContactInput from "./inputs/ContactInput";
+import FullfilledBlank from "./FullfilledBlank";
+
+import { formatDate } from "../helpers/dateFormats";
+
+import "./styles/styles.scss";
 
 export type FormValues = {
   name: string;
@@ -29,7 +36,15 @@ export type FormValues = {
   city: string;
 };
 
+export type InputProps = {
+  register: UseFormRegister<FormValues>;
+  setValue: UseFormSetValue<FormValues>;
+  setError?: UseFormSetError<FormValues>;
+  error?: FieldError;
+};
+
 export default function Form() {
+  const [submitted, setSubmitted] = useState<FormValues | null>();
   const {
     register,
     handleSubmit,
@@ -39,19 +54,7 @@ export default function Form() {
     setValue,
   } = useForm<FormValues>();
   const dispatch = useAppDispatch();
-  const { cities, specialities, doctors } = useAppSelector((state) => state);
-  const [trigger, setTrigger] = useState<boolean>(false);
-
-  const handleTrigger = () => {
-    setTrigger(!trigger);
-    dispatch(resetCitiesDeps());
-    dispatch(resetDoctorsDeps());
-    dispatch(resetSpecialitiesDeps());
-    setValue("city", "");
-    setValue("doctor", "");
-    setValue("speciality", "");
-  };
-
+  const { doctors, cities, specialities } = useAppSelector((state) => state);
   useEffect(() => {
     dispatch(fetchCities());
     dispatch(fetchDoctors());
@@ -62,99 +65,96 @@ export default function Form() {
     if (new Date(data["birthday-date"]) > new Date()) {
       return setError("birthday-date", { message: "Incorrect date" });
     }
-    if (!data.doctor && !data.city) {
-      setError("doctor", { message: "Doctor required" });
-      setError("city", { message: "City required" });
+    if (!data.doctor) {
+      setError("doctor", { message: "Doctor is required" });
+      setError("city", { message: "City is required" });
       return;
     }
     if (data.doctor) {
-      const doc = doctors.filtered.find((d) => data.doctor === d.id);
+      const doc = doctors.all.find((d) => d.id === data.doctor);
       data.doctor = `${doc?.name} ${doc?.surname}`;
-      data.city = cities.all.find((c) => c.id === doc?.cityId)?.name || "";
+      data.city =
+        cities.all.find((c) => c.id === doc?.cityId)?.name || data.city;
       data.speciality =
-        specialities.all.find((s) => s.id === doc?.specialityId)?.name || "";
+        specialities.all.find((s) => s.id === doc?.specialityId)?.name ||
+        data.speciality;
     }
     data["birthday-date"] = formatDate(data["birthday-date"]);
+    alert("Form submitted");
     console.log(data);
+    setSubmitted(data);
   };
   return (
-    <form onSubmit={handleSubmit(submit)}>
-      <input
-        {...register("name", {
-          required: "This is required",
-          pattern: patterns.name,
-        })}
-      />
-      <p>{errors.name?.message}</p>
-      <input
-        {...register("birthday-date", {
-          required: "Please select birthday date",
-          onChange(e) {
-            setValue("birthday-date", e.target.value);
-            setValue("doctor", "");
-            const age = getAge(e.target.value);
-            dispatch(updateSpecialitiesDeps({ age }));
-            dispatch(updateDoctorsDeps({ isPediatrician: +age < 18 }));
-          },
-        })}
-        type='date'
-      />
-      <p>{errors["birthday-date"]?.message}</p>
-      <select
-        {...register("sex", {
-          required: "Please select sex",
-          onChange(event) {
-            setValue("sex", event.target.value);
-            dispatch(updateSpecialitiesDeps({ sex: event.target.value }));
-          },
-        })}
-      >
-        <option value=''>none</option>
-        <option value='Male'>male</option>
-        <option value='Female'>female</option>
-      </select>
-      <p>{errors.sex?.message}</p>
-      <input
-        {...register("email", {
-          required: {
-            value: !watch().phone,
-            message: "Please fill email or phone",
-          },
-          pattern: patterns.email,
-        })}
-      />
-      <input
-        {...register("phone", {
-          required: {
-            value: !watch().email,
-            message: "Please fill email or phone",
-          },
-          pattern: patterns.phone,
-        })}
-      />
-      <p>{errors.phone?.message || errors.email?.message}</p>
-      <p onClick={handleTrigger}>
-        Find doctor by: {trigger ? "city/speciality" : "name"}
-      </p>
-      {trigger ? (
-        <>
-          <CitySelector label='city' {...register("city")} />
-          <p>{errors.city?.message}</p>
-          {watch().city && (
-            <SpecialitySelector
-              label='speciality'
-              {...register("speciality")}
-            />
+    <>
+      <form onSubmit={handleSubmit(submit)}>
+        <NameInput
+          register={register}
+          setValue={setValue}
+          error={errors.name}
+        />
+        <BirthdayInput
+          register={register}
+          setValue={setValue}
+          error={errors["birthday-date"]}
+        />
+        <SexSelector
+          register={register}
+          setValue={setValue}
+          error={errors.sex}
+        />
+        <ContactInput
+          label='email'
+          dependency='phone'
+          register={register}
+          setValue={setValue}
+          watch={watch}
+        />
+        <ContactInput
+          label='phone'
+          dependency='email'
+          register={register}
+          setValue={setValue}
+          watch={watch}
+        />
+        {errors.phone && errors.email && (
+          <p className='error'>
+            {errors.phone?.message || errors.email?.message}
+          </p>
+        )}
+        {doctors.load && cities.load && specialities.load && (
+          <div className='loader'>Load doctors</div>
+        )}
+        {cities.error && <p className='error'>{cities.error}</p>}
+        {specialities.error && <p className='error'>{specialities.error}</p>}
+        {doctors.error && <p className='error'>{doctors.error}</p>}
+        {!doctors.load &&
+          !cities.load &&
+          !specialities.load &&
+          !doctors.error &&
+          !cities.error &&
+          !specialities.error && (
+            <>
+              <CitySelector
+                register={register}
+                setValue={setValue}
+                error={errors.city}
+                dependency={!watch().doctor}
+              />
+              <SpecialitySelector
+                register={register}
+                setValue={setValue}
+                error={errors.speciality}
+              />
+              <DoctorSelector
+                register={register}
+                setValue={setValue}
+                error={errors.doctor}
+              />
+              <input type='submit' />
+            </>
           )}
-          {watch().city && (
-            <DoctorSelector label='doctor' {...register("doctor")} />
-          )}
-          <p>{errors.doctor?.message}</p>
-        </>
-      ) : (
-        <DoctorSelector label='doctor' {...register("doctor")} />
-      )}
-      <input type='submit' />
-    </form>
+      </form>
+      {submitted && <FullfilledBlank person={submitted} />}
+    </>
   );
 }

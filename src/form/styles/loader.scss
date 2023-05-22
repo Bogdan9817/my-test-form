@@ -1,0 +1,27 @@
+.loader {
+    text-align: center;
+    font-size: 1em;
+    font-weight: bolder;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: rgba(109, 103, 228, .5);
+    animation: load 1s infinite;
+}
+
+@keyframes load {
+    25% {
+        opacity: .5;
+    }
+    50% {
+        opacity: 1;
+
+    }
+    75% {
+
+        opacity: .5;
+    }
+    100% {
+        opacity: 1;
+    }
+    
+}

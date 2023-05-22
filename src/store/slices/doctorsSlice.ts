@@ -10,26 +10,16 @@ type Doctor = {
   cityId: string;
 };
 
-type DoctorsDeps = {
-  cityId?: string;
-  specialityId?: string;
-  isPediatrician?: boolean;
-};
-
 export type DoctorsState = {
   all: Doctor[];
-  filtered: Doctor[];
   load: boolean;
   error: string | null;
-  deps: DoctorsDeps;
 };
 
 const initialState: DoctorsState = {
   all: [],
-  filtered: [],
   load: false,
   error: null,
-  deps: {},
 };
 
 export const fetchDoctors = createAsyncThunk("fetch/doctors", async () => {
@@ -40,43 +30,10 @@ export const fetchDoctors = createAsyncThunk("fetch/doctors", async () => {
 export const doctorsSlice = createSlice({
   name: "doctors",
   initialState,
-  reducers: {
-    updateDoctors: (state) => {
-      const { all, deps } = state;
-      if (Object.values(deps).every((v) => v === undefined)) {
-      } else {
-        state.filtered = all.filter((d) => {
-          if (deps?.cityId && deps?.cityId !== d.cityId) return false;
-          if (deps?.specialityId && deps.specialityId !== d.specialityId) {
-            return false;
-          }
-          if (
-            deps.isPediatrician !== undefined &&
-            deps.isPediatrician !== d.isPediatrician
-          ) {
-            return false;
-          }
-          return true;
-        });
-        if (!state.filtered.length) {
-          state.error = "Can`t find particular doctors";
-        }
-      }
-    },
-    updateDoctorsDeps: (state, { payload }) => {
-      const key = Object.keys(payload)[0];
-      const value = Object.values(payload)[0];
-      state.deps = { ...state.deps, [key]: value };
-      state.error = null;
-    },
-    resetDoctorsDeps: (state) => {
-      state.deps = { isPediatrician: state.deps.isPediatrician };
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchDoctors.fulfilled, (state, { payload }) => {
       state.all = payload;
-      state.filtered = payload;
       state.load = false;
     });
     builder.addCase(fetchDoctors.pending, (state) => {
@@ -84,13 +41,11 @@ export const doctorsSlice = createSlice({
       state.load = true;
     });
     builder.addCase(fetchDoctors.rejected, (state) => {
-      state.error = "Ooops something went wrong";
+      state.error =
+        "Ooops something went wrong fetching doctors... Try again later";
       state.load = false;
     });
   },
 });
-
-export const { updateDoctors, updateDoctorsDeps, resetDoctorsDeps } =
-  doctorsSlice.actions;
 
 export default doctorsSlice.reducer;

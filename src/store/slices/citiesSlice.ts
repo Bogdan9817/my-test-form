@@ -6,24 +6,16 @@ type City = {
   name: string;
 };
 
-type CitiesDeps = {
-  doctorLoc?: string | undefined;
-};
-
 type CitiesState = {
   all: City[];
-  filtered: City[];
   load: boolean;
   error: string | null;
-  deps: CitiesDeps;
 };
 
 const initialState: CitiesState = {
   all: [],
-  filtered: [],
   load: false,
   error: null,
-  deps: {},
 };
 
 export const fetchCities = createAsyncThunk("fetch/cities", async () => {
@@ -34,27 +26,10 @@ export const fetchCities = createAsyncThunk("fetch/cities", async () => {
 export const citiesSlice = createSlice({
   name: "cities",
   initialState,
-  reducers: {
-    updateCities: (state) => {
-      if (state.deps?.doctorLoc) {
-        state.filtered = state.all.filter(
-          (c) => c.id === state.deps?.doctorLoc
-        );
-      } else {
-        state.filtered = state.all;
-      }
-    },
-    updateCitiesDeps: (state, { payload }: { payload: CitiesDeps }) => {
-      state.deps = { ...state.deps, ...payload };
-    },
-    resetCitiesDeps: (state) => {
-      state.deps = {};
-    },
-  },
+  reducers: {},
   extraReducers(builder) {
     builder.addCase(fetchCities.fulfilled, (state, { payload }) => {
       state.all = payload;
-      state.filtered = payload;
       state.load = false;
     });
     builder.addCase(fetchCities.pending, (state) => {
@@ -62,13 +37,11 @@ export const citiesSlice = createSlice({
       state.load = true;
     });
     builder.addCase(fetchCities.rejected, (state) => {
-      state.error = "Ooops, something went wrong... Try again later";
+      state.error =
+        "Ooops, something went wrong fetching cities... Try again later";
       state.load = false;
     });
   },
 });
-
-export const { updateCities, updateCitiesDeps, resetCitiesDeps } =
-  citiesSlice.actions;
 
 export default citiesSlice.reducer;
