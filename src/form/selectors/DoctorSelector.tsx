@@ -9,7 +9,6 @@ const DoctorSelector = ({ register, setValue, error }: InputProps) => {
 
   return (
     <>
-      {alert && <p className='alert'>{alert}</p>}
       {!alert && all.length && (
         <div className='form-group'>
           <label>Doctors</label>
@@ -33,7 +32,8 @@ const DoctorSelector = ({ register, setValue, error }: InputProps) => {
           </select>
         </div>
       )}
-      {error && <p className='error'>{error.message}</p>}
+      {error && !alert && <p className='error'>{error.message}</p>}
+      {alert && !error && <p className='alert'>{alert}</p>}
     </>
   );
 };
